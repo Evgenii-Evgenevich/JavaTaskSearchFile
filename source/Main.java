@@ -6,26 +6,28 @@ import javax.xml.parsers.*;
 import javax.xml.stream.*;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.*;
 import java.util.stream.*;
 import java.util.zip.*;
 import java.util.*;
 
 public class Main {
+    public static Charset CP866 = Charset.forName("CP866");
 
     private static String zipAbsolutePath = null;
 
     public static void main(String[] args) {
-        System.out.println("Search for");
+        String dir = null;
 
-        Scanner scanner = new Scanner(System.in);
+        if (dir == null) {
+            Scanner scanner = new Scanner(System.in);
+            dir = scanner.nextLine();
+        }
 
-        File dir = new File(scanner.nextLine());
-
-        readDirectory(dir);
+        readDirectory(new File(dir));
     }
 
-    private static void readDirectory(File file) {
-
+    public static void readDirectory(File file) {
         for (File entry : file.listFiles()) {
             if (entry.isDirectory()) {
                 Main.readDirectory(entry);
@@ -34,13 +36,15 @@ public class Main {
                 try {
                     Main.readZip(entry);
                 }
-                catch (IOException e) {}
+                catch (IOException e) {
+                    // is not zip
+                }
             }
         }
     }
 
-    private static void readZip(File file) throws IOException {
-        ZipFile zipFile = new ZipFile(file);
+    public static void readZip(File file) throws IOException {
+        ZipFile zipFile = new ZipFile(file, CP866);
 
         Stream<? extends ZipEntry> entries = zipFile.stream();
 
@@ -52,11 +56,15 @@ public class Main {
             InputStream inputStream = zipFile.getInputStream(entry);
 
             try {
-                zipAbsolutePath = file.getAbsolutePath();
+                Main.zipAbsolutePath = file.getAbsolutePath();
 
                 Main.readXml(entry, inputStream);
             }
-            catch (XMLStreamException e) {}
+            catch (XMLStreamException e) {
+                // is not xml
+            }
+
+            inputStream.close();
         }
 
         zipFile.close();
@@ -84,6 +92,8 @@ public class Main {
                     // is not url
                 }
             }
+
+            reader.close();
         }
     }
 }
