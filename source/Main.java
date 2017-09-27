@@ -2,66 +2,88 @@
  * Created by EE on 26.09.2017.
  */
 
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 import javax.xml.parsers.*;
+import javax.xml.stream.*;
 import java.io.*;
+import java.net.*;
 import java.util.stream.*;
 import java.util.zip.*;
 import java.util.*;
 
 public class Main {
 
-    private static String zipName = null;
+    private static String zipAbsolutePath = null;
 
-    public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
+    public static void main(String[] args) {
         System.out.println("Search for");
 
         Scanner scanner = new Scanner(System.in);
 
-        zipName = scanner.nextLine();
+        File dir = new File(scanner.nextLine());
 
-        if (true) {
-            ZipInputStream zipStream = new ZipInputStream(new FileInputStream(zipName));
+        readDirectory(dir);
+    }
 
-            ZipEntry entry = null;
+    private static void readDirectory(File file) {
 
-            while ((entry = zipStream.getNextEntry()) != null) {
-                Main.readEntry(entry, zipStream);
+        for (File entry : file.listFiles()) {
+            if (entry.isDirectory()) {
+                Main.readDirectory(entry);
             }
-
-            zipStream.close();
-        }
-        else {
-            ZipFile zipFile = new ZipFile(zipName);
-
-            Stream<? extends ZipEntry> entries = zipFile.stream();
-
-            Iterator<? extends ZipEntry> iterator = entries.iterator();
-
-            while (iterator.hasNext()) {
-                ZipEntry entry = iterator.next();
-
-                InputStream in = zipFile.getInputStream(entry);
-
-                Main.readEntry(entry, in);
+            else {
+                try {
+                    Main.readZip(entry);
+                }
+                catch (IOException e) {}
             }
-
-            zipFile.close();
         }
     }
 
-    public static void readEntry(ZipEntry entry, InputStream in) throws IOException, ParserConfigurationException, SAXException {
-        boolean isxml = entry.getName().endsWith(".xml");
+    private static void readZip(File file) throws IOException {
+        ZipFile zipFile = new ZipFile(file);
 
-        DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+        Stream<? extends ZipEntry> entries = zipFile.stream();
 
-        DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+        Iterator<? extends ZipEntry> iterator = entries.iterator();
 
-        Document document = docBuilder.parse(in);
+        while (iterator.hasNext()) {
+            ZipEntry entry = iterator.next();
 
-        //...
-        //...
+            InputStream inputStream = zipFile.getInputStream(entry);
+
+            try {
+                zipAbsolutePath = file.getAbsolutePath();
+
+                Main.readXml(entry, inputStream);
+            }
+            catch (XMLStreamException e) {}
+        }
+
+        zipFile.close();
+    }
+
+    public static void readXml(ZipEntry entry, InputStream inputStream) throws IOException, XMLStreamException {
+        if (!entry.isDirectory()) {
+            boolean isxml = entry.getName().endsWith(".xml");
+
+            XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+            XMLStreamReader reader = inputFactory.createXMLStreamReader(inputStream);
+
+            while (reader.hasText()) {
+                String string = reader.getText();
+
+                try {
+                    URL url = new URL(string);
+                    int lineNumber = reader.getLocation().getLineNumber();
+
+                    System.out.println("zip\t" + Main.zipAbsolutePath);
+                    System.out.println("xml\t" + entry.getName());
+                    System.out.println("line\t" + lineNumber);
+                    System.out.println("url\t" + url.toString());
+                } catch (MalformedURLException e) {
+                    // is not url
+                }
+            }
+        }
     }
 }
