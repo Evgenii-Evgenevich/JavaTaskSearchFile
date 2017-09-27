@@ -12,7 +12,7 @@ import java.util.zip.*;
 import java.util.*;
 
 public class Main {
-    public static Charset CP866 = Charset.forName("CP866");
+    public static final Charset CP866 = Charset.forName("CP866");
 
     private static String zipAbsolutePath = null;
 
