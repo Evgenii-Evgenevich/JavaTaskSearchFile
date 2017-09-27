@@ -70,30 +70,41 @@ public class Main {
         zipFile.close();
     }
 
-    public static void readXml(ZipEntry entry, InputStream inputStream) throws IOException, XMLStreamException {
+    public static void readXml(ZipEntry entry, InputStream inputStream) throws XMLStreamException {
         if (!entry.isDirectory()) {
             boolean isxml = entry.getName().endsWith(".xml");
 
             XMLInputFactory inputFactory = XMLInputFactory.newInstance();
             XMLStreamReader reader = inputFactory.createXMLStreamReader(inputStream);
 
-            while (reader.hasText()) {
-                String string = reader.getText();
+            while (reader.hasNext()) {
+                int type = reader.next();
 
-                try {
-                    URL url = new URL(string);
-                    int lineNumber = reader.getLocation().getLineNumber();
+                if (reader.isCharacters())
+                {
+                    String string = reader.getText();
 
-                    System.out.println("zip\t" + Main.zipAbsolutePath);
-                    System.out.println("xml\t" + entry.getName());
-                    System.out.println("line\t" + lineNumber);
-                    System.out.println("url\t" + url.toString());
-                } catch (MalformedURLException e) {
-                    // is not url
+                    try {
+                        int lineNumber = reader.getLocation().getLineNumber();
+                        printURL(string, lineNumber, entry.getName());
+                    }
+                    catch (MalformedURLException e) {
+                        // is not url
+                    }
                 }
             }
 
             reader.close();
         }
+    }
+
+    public static void printURL(String string, int lineNumber, String entryName) throws MalformedURLException {
+        URL url = new URL(string);
+
+        System.out.println("zip \t" + Main.zipAbsolutePath);
+        System.out.println("xml \t" + entryName);
+        System.out.println("line\t" + lineNumber);
+        System.out.println("url \t" + url.toString());
+        System.out.println();
     }
 }
